@@ -1,0 +1,24 @@
+[Service]
+ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
+ExecStartPre=/usr/bin/mkdir -p /var/log/containers
+
+Environment=KUBELET_VERSION={{k8s_version}}
+Environment="RKT_OPTS=--volume var-log,kind=host,source=/var/log \
+  --mount volume=var-log,target=/var/log \
+  --volume dns,kind=host,source=/etc/resolv.conf \
+  --mount volume=dns,target=/etc/resolv.conf"
+
+ExecStart=/usr/lib/coreos/kubelet-wrapper \
+  --kubeconfig=http://127.0.0.1:8080 \
+  --network-plugin-dir=/etc/kubernetes/cni/net.d \
+  --network-plugin={{k8s_kublet_network_plugin}} \
+  --register-schedulable=false \
+  --allow-privileged=true \
+  --pod-manifest-path=/etc/kubernetes/manifests \
+  --hostname-override={{k8s_adverstise_ip}} \
+  --cluster-dns={{k8s_dns_service_ip}} \
+  --cluster-domain={{k8s_cluster_domain}}
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target

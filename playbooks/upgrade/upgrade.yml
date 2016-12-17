@@ -1,0 +1,40 @@
+---
+
+#######################
+# K8s masters upgrade #
+#######################
+
+- name: k8s-master-upgrade
+  hosts: k8s-masters
+  user: core
+  become: yes
+  serial: 1
+  max_fail_percentage: 1
+  tasks:
+    - include: ../../tasks/k8s_kubelet.yml
+    - include: ../../tasks/k8s_master_nodes_components.yml
+    - include: ../../tasks/k8s_pods_checks.yml
+  handlers:
+    - include: ../../handlers/main.yml
+  vars_files:
+    - "../../../../group_vars/{{project_name}}_{{dc}}.yml"
+  vars:
+    k8s_role_path: "{{playbook_dir}}/.."
+
+#######################
+# K8s workers upgrade #
+#######################
+
+- name: k8s-workers-upgrade
+  hosts: k8s-workers
+  user: core
+  become: yes
+  serial: 1
+  max_fail_percentage: 1
+  tasks:
+    - include: ../../tasks/k8s_workers_nodes_components.yml
+  handlers:
+    - include: ../../handlers/main.yml
+  vars_files:
+    - "../../../../group_vars/{{project_name}}_{{dc}}.yml"
+

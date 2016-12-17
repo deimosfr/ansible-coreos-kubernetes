@@ -1,0 +1,21 @@
+---
+
+# Push flanneld configuration to etcd
+
+- name: get Pod network IP range through etcd
+  uri:
+    url: "http://{{groups['k8s-masters'][0]['priv_ip']}}:2379/v2/keys/coreos.com/network/config"
+    method: GET
+    return_content: yes
+  delegate_to: localhost
+  register: pod_network_info
+  when: "k8s_kublet_network_plugin == ''"
+
+- name: configure Pod network IP range through etcd
+  uri:
+    url: "http://{{groups['k8s-masters'][0]['priv_ip']}}:2379/v2/keys/coreos.com/network/config"
+    method: PUT
+    body: "value={\"Network\":\"{{k8s_pod_network}}\",\"Backend\":{\"Type\":\"vxlan\"}}"
+  delegate_to: localhost
+  when: k8s_kublet_network_plugin == '' and pod_network_info.content.find(k8s_pod_network) == -1
+  notify: restart flanneld

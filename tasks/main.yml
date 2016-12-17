@@ -1,0 +1,4 @@
+---
+
+# Main is empty because orchastration should switch between localhost and
+# kubernetes hosts. Please look at the README for more instructions

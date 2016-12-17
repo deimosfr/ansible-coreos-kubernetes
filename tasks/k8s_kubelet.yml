@@ -1,0 +1,52 @@
+---
+
+- name: configure kubelet systemd service
+  template:
+    src: "{{k8s_template_dir}}/kubelet.service.j2"
+    dest: /etc/systemd/system/kubelet.service
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  notify: restart kubelet
+
+- meta: flush_handlers
+
+- name: ensure kubelet service is started
+  systemd:
+    name: "kubelet"
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: wait for kubelet master port to be open
+  wait_for:
+    host: 127.0.0.1
+    port: 8080
+    delay: 5
+    connect_timeout: 2
+    timeout: 1800
+  changed_when: false
+  when: "'k8s-masters' in group_names"
+
+- name: wait for kubelet worker port to be open
+  wait_for:
+    host: 127.0.0.1
+    port: 10248
+    delay: 5
+    connect_timeout: 2
+    timeout: 1800
+  changed_when: false
+  when: "'k8s-workers' in group_names"
+
+- name: wait for kubelet to be ready
+  uri:
+    url: 'http://127.0.0.1:8080/version'
+    method: GET
+    return_content: yes
+  register: kubelet_status
+  until: kubelet_status.json.gitTreeState == 'clean'
+  retries: 300
+  delay: 10
+  changed_when: false
+  when: "'k8s-masters' in group_names"

@@ -1,0 +1,23 @@
+---
+
+- name: reload systemd
+  command: systemctl daemon-reload
+
+- name: restart flanneld
+  systemd:
+    name: 'flanneld'
+    state: restarted
+    daemon_reload: yes
+
+- name: restart docker
+  systemd:
+    name: 'docker'
+    state: restarted
+    daemon_reload: yes
+
+- name: restart kubelet
+  systemd:
+    name: 'kubelet'
+    state: restarted
+    daemon_reload: yes
+  when: k8s_restart_kubelet

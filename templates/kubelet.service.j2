@@ -1,0 +1,37 @@
+[Service]
+ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
+ExecStartPre=/usr/bin/mkdir -p /var/log/containers
+
+Environment=KUBELET_VERSION={{k8s_version}}
+Environment="RKT_OPTS=--volume var-log,kind=host,source=/var/log \
+  --mount volume=var-log,target=/var/log \
+  --volume dns,kind=host,source=/etc/resolv.conf \
+  --mount volume=dns,target=/etc/resolv.conf"
+
+ExecStart=/usr/lib/coreos/kubelet-wrapper \
+{% if 'k8s-masters' in group_names %}
+  --api-servers=http://127.0.0.1:8080 \
+{% else %}
+  --api-servers=https://{{k8s_master_host}} \
+{% endif %}
+{% if 'k8s-masters' in group_names %}
+  --register-schedulable=false \
+  --pod-manifest-path=/etc/kubernetes/manifests \
+{% endif %}
+{% if 'k8s-workers' in group_names %}
+  --register-node=true \
+  --pod-manifest-path=/etc/kubernetes/manifests \
+  --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+  --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
+  --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
+{% endif %}
+  --network-plugin-dir=/etc/kubernetes/cni/net.d \
+  --network-plugin={{k8s_kublet_network_plugin}} \
+  --allow-privileged=true \
+  --hostname-override={{k8s_adverstise_ip}} \
+  --cluster-dns={{k8s_dns_service_ip}} \
+  --cluster-domain={{k8s_cluster_domain}}
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target

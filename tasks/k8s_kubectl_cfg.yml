@@ -1,0 +1,33 @@
+---
+
+- name: check if kubectl is configured
+  command: 'kubectl config get-contexts'
+  delegate_to: localhost
+  register: kubectl_contexts_result
+  changed_when: false
+
+- name: configure kubectl
+  command: "{{item}}"
+  with_items:
+    - "kubectl config set-cluster {{k8s_kubectl_cluster_name}} --server=https://{{k8s_master_host}} --certificate-authority={{k8s_ssl_api_server_path}}/{{k8s_ssl_ca_pem_key_name}}"
+    - "kubectl config set-credentials default-admin --certificate-authority={{k8s_ssl_api_server_path}}/{{k8s_ssl_ca_pem_key_name}} --client-key={{k8s_ssl_admin_path}}/admin-key.pem --client-certificate={{k8s_ssl_admin_path}}/admin.pem"
+    - "kubectl config set-context {{k8s_kubectl_cluster_name}} --cluster={{k8s_kubectl_cluster_name}} --user=default-admin"
+  delegate_to: localhost
+  when: "kubectl_contexts_result.stdout.find('{{k8s_kubectl_cluster_name}}') == -1"
+
+- name: use correct cluster context
+  command: "kubectl config use-context {{k8s_kubectl_cluster_name}}"
+  delegate_to: localhost
+  changed_when: false
+
+- name: get cluster node list
+  shell: 'kubectl get nodes | grep -c Ready'
+  delegate_to: localhost
+  register: kubectl_result
+  ignore_errors: yes
+  changed_when: false
+
+- name: ensure Kubernetes nodes are present and ready
+  assert:
+    that:
+      - "'0' not in kubectl_result.stdout"

@@ -1,0 +1,12 @@
+{% for category in k8s_workers_openssl_config|sort %}
+[{{category}}]
+{% if k8s_workers_openssl_config[category] %}
+{% for k in k8s_workers_openssl_config[category]|sort %}
+  {{k}} = {{k8s_workers_openssl_config[category][k]}}
+{% endfor %}
+{% else %}
+{% if category == 'alt_names' %}
+  IP.1 = {{lookup('dig', hostvars[item]['priv_ip'])}}
+{% endif %}
+{% endif %}
+{% endfor %}

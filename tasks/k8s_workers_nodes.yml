@@ -1,0 +1,16 @@
+---
+
+# SSL certificates
+- include: k8s_ssl_deploy.yml
+
+# Network Configuration
+- include: k8s_networking.yml
+
+# Docker Configuration
+- include: k8s_docker.yml
+
+# Setup Proxy / Kubeconfig
+- include: k8s_workers_nodes_components.yml
+
+# Create the kubelet Unit
+- include: k8s_kubelet.yml

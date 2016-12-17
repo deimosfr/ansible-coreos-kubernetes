@@ -1,0 +1,35 @@
+---
+
+- name: ensure etcd is started
+  systemd:
+    name: etcd2
+    state: started
+    daemon_reload: yes
+
+- name: wait for etcd port to be open
+  wait_for:
+    host: 127.0.0.1
+    port: 2379
+    delay: 5
+    connect_timeout: 2
+    timeout: 300
+
+- name: get etcd current config for flanneld
+  command: 'etcdctl get /coreos.com/network/config'
+  register: etcd_net_config
+  changed_when: false
+  ignore_errors: yes
+
+- name: publishing network config to etcd
+  command: "/usr/bin/etcdctl set /coreos.com/network/config '{ \"Network\": \"{{k8s_flanneld_subnet}}\" }'"
+  when: etcd_net_config.stdout.find('{{k8s_flanneld_subnet}}') == -1
+
+- name: get etcd cluster info
+  command: 'etcdctl cluster-health'
+  register: etcd_status
+  changed_when: false
+
+- name: ensure etcd cluster is healthy
+  assert:
+    that:
+      - "'cluster is healthy' in etcd_status.stdout"

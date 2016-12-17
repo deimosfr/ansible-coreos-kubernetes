@@ -1,0 +1,43 @@
+---
+
+# Network Configuration
+
+- name: ensure flanneld systemd directory exist
+  file:
+    path: "{{item}}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+  with_items:
+    - '/etc/flannel'
+    - '/etc/systemd/system/flanneld.service.d'
+
+- name: configure systemd flannel options
+  template:
+    src: "{{k8s_template_dir}}/{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: root
+    group: root
+    owner: 0644
+  with_items:
+    - { src: 'flannel_options.env.j2', dest: '/etc/flannel/options.env' }
+    - { src: '40-ExecStartPre-symlink.conf.j2', dest: '/etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf' }
+  notify: restart flanneld
+
+- meta: flush_handlers
+
+- name: ensure flanneld is started
+  systemd:
+    name: 'flanneld'
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: wait for flannel interface to enable interface
+  shell: "ls -d1 /sys/class/net/*"
+  register: all_interfaces
+  until: all_interfaces.stdout.find('flannel') != -1
+  retries: 24
+  delay: 5
+  changed_when: false

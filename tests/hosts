@@ -1,0 +1,16 @@
+[local]
+localhost
+
+[k8s-masters]
+core[01:03].myfqdn.com
+
+[k8s-workers]
+core[04:07].myfqdn.com
+
+[k8s-nodes:children]
+k8s-masters
+k8s-workers
+
+[k8s-nodes:vars]
+ansible_ssh_user=core
+ansible_python_interpreter="/opt/python/bin/python"

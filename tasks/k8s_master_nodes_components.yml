@@ -1,0 +1,23 @@
+---
+
+- name: ensure k8s manifests directory exist
+  file:
+    path: /etc/kubernetes/manifests
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+
+- name: configure k8s API Server / Proxy / Controller Manager / Scheduler
+  template:
+    src: "{{k8s_template_dir}}/generate_yaml.j2"
+    dest: "/etc/kubernetes/manifests/{{item.dest}}"
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  with_items:
+    - { yaml: "{{k8s_kube_apiserver}}", dest: 'kube-apiserver.yaml' }
+    - { yaml: "{{k8s_kube_proxy_masters}}", dest: 'kube-proxy.yaml' }
+    - { yaml: "{{k8s_kube_controller_manager}}", dest: 'kube-controller-manager.yaml' }
+    - { yaml: "{{k8s_kube_scheduler}}", dest: 'kube-scheduler.yaml' }

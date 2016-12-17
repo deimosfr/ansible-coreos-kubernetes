@@ -1,0 +1,36 @@
+---
+
+# TLS Assets
+- name: ensure k8s ssl directory exist
+  file:
+    path: /etc/kubernetes/ssl
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+
+- name: copy masters ssl certificates
+  copy:
+    src: "{{item.src}}"
+    dest: "/etc/kubernetes/ssl/{{item.dest}}"
+    owner: root
+    group: root
+    mode: 0600
+  with_items:
+    - { src: "{{k8s_ssl_api_server_path}}/{{k8s_ssl_ca_pem_key_name}}", dest: "{{k8s_ssl_ca_pem_key_name}}" }
+    - { src: "{{k8s_ssl_api_server_path}}/{{k8s_ssl_apiserver_pem_name}}", dest: "{{k8s_ssl_apiserver_pem_name}}" }
+    - { src: "{{k8s_ssl_api_server_path}}/{{k8s_ssl_apiserver_key_pem_name}}", dest: "{{k8s_ssl_apiserver_key_pem_name}}" }
+  when: "'k8s-masters' in group_names"
+
+- name: copy workers ssl certificates
+  copy:
+    src: "{{item.src}}"
+    dest: "/etc/kubernetes/ssl/{{item.dest}}"
+    owner: root
+    group: root
+    mode: 0600
+  with_items:
+    - { src: "{{k8s_ssl_api_server_path}}/{{k8s_ssl_ca_pem_key_name}}", dest: "{{k8s_ssl_ca_pem_key_name}}" }
+    - { src: "{{k8s_ssl_workers_path}}/{{inventory_hostname}}-worker.pem", dest: "worker.pem" }
+    - { src: "{{k8s_ssl_workers_path}}/{{inventory_hostname}}-worker-key.pem", dest: "worker-key.pem" }
+  when: "'k8s-workers' in group_names"
