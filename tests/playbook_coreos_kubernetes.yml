@@ -11,7 +11,7 @@
     - include: ../../deimosfr.coreos-ansible/tasks/ansible_prerequisites.yml
   vars:
     ansible_python_interpreter: "/usr/bin/python"
-    k8s_role_path: "{{playbook_dir}}/../../deimosfr.coreos-ansible"
+    coreos_ansible_role_path: "{{playbook_dir}}/../../deimosfr.coreos-ansible"
 
 - name: coreos-ansible
   hosts: k8s-nodes
@@ -20,6 +20,8 @@
   gather_facts: False
   roles:
     - deimosfr.coreos-ansible
+  vars:
+    coreos_ansible_role_path: "{{playbook_dir}}/../../deimosfr.coreos-ansible"
 
 #######################
 # K8S SSL CERTIFICATS #
@@ -32,8 +34,6 @@
     - include: ../tasks/k8s_ssl_certs.yml
   vars_files:
     - ../defaults/main.yml
-  vars:
-    k8s_role_path: "{{playbook_dir}}/.."
 
 ###############
 # K8S MASTERS #
@@ -51,7 +51,6 @@
   vars_files:
     - ../defaults/main.yml
   vars:
-    k8s_role_path: "{{playbook_dir}}/.."
     kubelet_template_name: 'kubelet-masters.service.j2'
     k8s_restart_kubelet: true
 
@@ -64,8 +63,6 @@
     - include: ../tasks/k8s_namespaces.yml
   vars_files:
     - ../defaults/main.yml
-  vars:
-    k8s_role_path: "{{playbook_dir}}/.."
 
 - name: validate pods are downloading or present
   hosts: k8s-masters
@@ -76,8 +73,6 @@
     - include: ../tasks/k8s_pods_checks.yml
   vars_files:
     - ../defaults/main.yml
-  vars:
-    k8s_role_path: "{{playbook_dir}}/.."
 
 ###############
 # K8S WORKERS #
@@ -94,7 +89,6 @@
   vars_files:
     - ../defaults/main.yml
   vars:
-    k8s_role_path: "{{playbook_dir}}/.."
     kubelet_template_name: 'kubelet-workers.service.j2'
     k8s_restart_kubelet: true
 
@@ -109,8 +103,6 @@
     - include: ../tasks/k8s_kubectl_cfg.yml
   vars_files:
     - ../defaults/main.yml
-  vars:
-    k8s_role_path: "{{playbook_dir}}/.."
 
 ######################
 # K8S 3RD PARTY APPS #
@@ -124,5 +116,3 @@
     - include: ../tasks/k8s_dashboard.yml
   vars_files:
     - ../defaults/main.yml
-  vars:
-    k8s_role_path: "{{playbook_dir}}/.."
