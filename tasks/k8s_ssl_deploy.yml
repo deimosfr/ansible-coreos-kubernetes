@@ -20,7 +20,6 @@
     - { src: "{{k8s_ssl_api_server_path}}/{{k8s_ssl_ca_pem_key_name}}", dest: "{{k8s_ssl_ca_pem_key_name}}" }
     - { src: "{{k8s_ssl_api_server_path}}/{{k8s_ssl_apiserver_pem_name}}", dest: "{{k8s_ssl_apiserver_pem_name}}" }
     - { src: "{{k8s_ssl_api_server_path}}/{{k8s_ssl_apiserver_key_pem_name}}", dest: "{{k8s_ssl_apiserver_key_pem_name}}" }
-  when: "'k8s-masters' in group_names"
 
 - name: copy workers ssl certificates
   copy:

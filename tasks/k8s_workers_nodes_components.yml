@@ -8,7 +8,7 @@
     mode: 0755
     state: directory
 
-- name: configure k8s Proxy / Kubeconfig
+- name: configure k8s Api Server / Proxy / Kubeconfig
   template:
     src: "{{k8s_template_dir}}/generate_yaml.j2"
     dest: "{{item.dest}}"
@@ -17,5 +17,6 @@
     mode: 0644
     backup: yes
   with_items:
+    - { yaml: "{{k8s_kube_apiserver}}", dest: '/etc/kubernetes/manifests/kube-apiserver.yaml' }
     - { yaml: "{{k8s_kube_proxy_workers}}", dest: '/etc/kubernetes/manifests/kube-proxy.yaml' }
     - { yaml: "{{k8s_worker_kubeconfig}}", dest: '/etc/kubernetes/worker-kubeconfig.yaml' }

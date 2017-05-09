@@ -13,18 +13,15 @@
 - name: generate k8s DNS service and replication controller files
   template:
     src: "{{k8s_template_dir}}/generate_yaml.j2"
-    dest: "{{k8s_role_path}}/files/k8s_containers_configs/{{item.dest}}"
+    dest: "/tmp/{{item.dest}}"
     mode: 0644
   with_items:
     - { yaml: "{{k8s_dns_service}}", dest: 'kube-dns-svc.yaml' }
     - { yaml: "{{k8s_dns_replication_controller}}", dest: 'kube-dns-rc.yaml' }
-  delegate_to: localhost
-  ignore_errors: yes
 
 - name: create k8s DNS service and replication controller
   command: "{{item}}"
   with_items:
-    - "kubectl create -f {{k8s_role_path}}/files/k8s_containers_configs/kube-dns-rc.yaml"
-    - "kubectl create -f {{k8s_role_path}}/files/k8s_containers_configs/kube-dns-svc.yaml"
-  delegate_to: localhost
-  ignore_errors: yes
+    - "/opt/bin/kubectl apply -f /tmp/kube-dns-rc.yaml"
+    - "/opt/bin/kubectl apply -f /tmp/kube-dns-svc.yaml"
+   changed_when: false

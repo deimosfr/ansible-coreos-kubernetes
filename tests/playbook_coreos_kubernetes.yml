@@ -97,7 +97,9 @@
 #############################
 
 - name: configure kubectl locally
-  hosts: localhost
+  hosts: k8s-nodes
+  user: core
+  become: yes
   gather_facts: False
   tasks:
     - include: ../tasks/k8s_kubectl_cfg.yml
@@ -109,7 +111,8 @@
 ######################
 
 - name: deploy 3rd party apps
-  hosts: localhost
+  hosts: k8s-masters[0]
+  user: core
   gather_facts: False
   tasks:
     - include: ../tasks/k8s_dns_addon.yml

@@ -21,6 +21,9 @@ You can use those roles to install Python and make CoreOS installation:
 * [deimosfr.coreos-ansible](https://github.com/deimosfr/ansible-coreos-ansible)
 * [deimosfr.coreos-container-linux](https://github.com/deimosfr/ansible-coreos-container-linux)
 
+You'll also need python libraries:
+* dnspython
+
 Role Variables
 --------------
 
