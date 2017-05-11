@@ -1,6 +1,6 @@
-k8s_version: 'v1.5.1_coreos.0'
+k8s_version: 'v1.6.2_coreos.0'
 k8s_dashboard_version: '1.5.0'
-k8s_kubectl_version: 'v1.6.1'
+k8s_kubectl_version: 'v1.6.2'
 
 # Master host will ideally be a network load balancer that sits in front of
 # them. Alternatively, a DNS name can be configured which will resolve to

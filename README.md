@@ -28,8 +28,9 @@ Role Variables
 --------------
 
 ```yaml
-k8s_version: 'v1.5.1_coreos.0'
-k8s_dashboard_version: '1.5.0'
+k8s_version: 'v1.6.2_coreos.0'
+k8s_dashboard_version: '1.6.0'
+k8s_kubectl_version: 'v1.6.2'
 
 # Master host will ideally be a network load balancer that sits in front of
 # them. Alternatively, a DNS name can be configured which will resolve to
@@ -44,11 +45,14 @@ k8s_dns_service_ip: '10.3.0.10'
 k8s_cluster_domain: 'cluster.local'
 k8s_kubectl_cluster_name: 'default-cluster'
 
-k8s_adverstise_ip: "{{ansible_enp0s8.ipv4.address}}"
+k8s_adverstise_ip: "{{ hostvars[inventory_hostname]['ansible_' + hw_list[hw_model]['coreos']['private_if']]['ipv4']['address'] }}"
 # Leave it blank if you're using flannel, otherwize use cni for Calico
 k8s_kublet_network_plugin: ''
 # Set to false by default because kubelet-wrapper will handle it
 k8s_restart_kubelet: false
+
+# Enable master nodes as workers as well
+k8s_enable_scheduler_on_masters: true
 
 # SSL
 
@@ -118,6 +122,8 @@ k8s_kube_apiserver:
       command:
       - /hyperkube
       - apiserver
+      # If you don't want your API being reachable from outside:
+      # --bind-address={{priv_ip}}
       - --bind-address=0.0.0.0
       - --etcd-servers={{k8s_etcd_endpoints}}
       - --allow-privileged=true
@@ -200,7 +206,7 @@ k8s_kube_proxy_workers:
       command:
       - /hyperkube
       - proxy
-      - --master=https://{{k8s_master_host}}
+      - --master=http://127.0.0.1:8080
       - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
       - --proxy-mode=iptables
       securityContext:
@@ -296,7 +302,7 @@ k8s_worker_kubeconfig:
   - name: local
     cluster:
       certificate-authority: /etc/kubernetes/ssl/ca.pem
-      server: "https://{{k8s_master_host}}:443"
+      server: "http://localhost:8080"
   users:
   - name: kubelet
     user:
@@ -543,6 +549,8 @@ ansible_python_interpreter="/opt/python/bin/python"
 Then you need to have a playbook to deploy Kubernetes like this one (adapt paths to your ansible directory):
 
 ```yaml
+---
+
 #########################
 # ANSIBLE PREREQUISITES #
 #########################
@@ -640,7 +648,9 @@ Then you need to have a playbook to deploy Kubernetes like this one (adapt paths
 #############################
 
 - name: configure kubectl locally
-  hosts: localhost
+  hosts: k8s-nodes
+  user: core
+  become: yes
   gather_facts: False
   tasks:
     - include: ../tasks/k8s_kubectl_cfg.yml
@@ -652,7 +662,8 @@ Then you need to have a playbook to deploy Kubernetes like this one (adapt paths
 ######################
 
 - name: deploy 3rd party apps
-  hosts: localhost
+  hosts: k8s-masters[0]
+  user: core
   gather_facts: False
   tasks:
     - include: ../tasks/k8s_dns_addon.yml
@@ -661,11 +672,6 @@ Then you need to have a playbook to deploy Kubernetes like this one (adapt paths
     - ../defaults/main.yml
 
 ```
-
-Not supported
--------------
-
-Master and worker role on the same host is not yet supported
 
 License
 -------

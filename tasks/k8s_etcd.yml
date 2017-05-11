@@ -2,7 +2,7 @@
 
 - name: ensure etcd is started
   systemd:
-    name: etcd2
+    name: etcd-member
     state: started
     daemon_reload: yes
 

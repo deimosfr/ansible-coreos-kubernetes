@@ -27,7 +27,6 @@
     connect_timeout: 2
     timeout: 1800
   changed_when: false
-  when: "'k8s-masters' in group_names"
 
 - name: wait for kubelet worker port to be open
   wait_for:
@@ -49,4 +48,3 @@
   retries: 300
   delay: 10
   changed_when: false
-  when: "'k8s-masters' in group_names"
