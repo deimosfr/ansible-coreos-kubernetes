@@ -51,7 +51,6 @@
   vars_files:
     - ../defaults/main.yml
   vars:
-    kubelet_template_name: 'kubelet-masters.service.j2'
     k8s_restart_kubelet: true
 
 - name: configure kubernetes namespaces
@@ -89,7 +88,6 @@
   vars_files:
     - ../defaults/main.yml
   vars:
-    kubelet_template_name: 'kubelet-workers.service.j2'
     k8s_restart_kubelet: true
 
 #############################

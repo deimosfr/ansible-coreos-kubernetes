@@ -1,0 +1,17 @@
+---
+
+- name: generate k8s Heapster service and deployment files
+  template:
+    src: "{{k8s_template_dir}}/generate_yaml.j2"
+    dest: "/tmp/{{item.dest}}"
+    mode: 0644
+  with_items:
+    - { yaml: "{{k8s_heapster_service}}", dest: 'kube-heapster-svc.yaml' }
+    - { yaml: "{{k8s_heapster_deployment}}", dest: 'kube-heapster-deployment.yaml' }
+
+- name: create k8s Heapster service and deployment
+  command: "{{item}}"
+  with_items:
+    - "/opt/bin/kubectl apply -f /tmp/kube-heapster-deployment.yaml"
+    - "/opt/bin/kubectl apply -f /tmp/kube-heapster-svc.yaml"
+  changed_when: false

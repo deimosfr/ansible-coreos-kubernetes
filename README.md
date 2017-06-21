@@ -602,7 +602,6 @@ Then you need to have a playbook to deploy Kubernetes like this one (adapt paths
   vars_files:
     - ../defaults/main.yml
   vars:
-    kubelet_template_name: 'kubelet-masters.service.j2'
     k8s_restart_kubelet: true
 
 - name: configure kubernetes namespaces
@@ -640,7 +639,6 @@ Then you need to have a playbook to deploy Kubernetes like this one (adapt paths
   vars_files:
     - ../defaults/main.yml
   vars:
-    kubelet_template_name: 'kubelet-workers.service.j2'
     k8s_restart_kubelet: true
 
 #############################

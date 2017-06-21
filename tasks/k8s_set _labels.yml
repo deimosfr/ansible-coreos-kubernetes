@@ -1,0 +1,6 @@
+---
+
+- name: set master and worker labels
+  command: |
+    kubectl label nodes {{k8s_kubelet_hostname}} type={% if 'k8s-masters' in group_names %}master{% else %}workers{% endif %} --overwrite
+  changed_when: false
