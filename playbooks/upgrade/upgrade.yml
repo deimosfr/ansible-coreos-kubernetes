@@ -11,6 +11,7 @@
   serial: 1
   max_fail_percentage: 1
   tasks:
+    - include: ../../tasks/k8s_kubectl_cfg.yml
     - include: ../../tasks/k8s_kubelet.yml
     - include: ../../tasks/k8s_master_nodes_components.yml
     - include: ../../tasks/k8s_pods_checks.yml
@@ -32,6 +33,7 @@
   serial: 1
   max_fail_percentage: 1
   tasks:
+    - include: ../../tasks/k8s_kubectl_cfg.yml
     - include: ../../tasks/k8s_workers_nodes_components.yml
   handlers:
     - include: ../../handlers/main.yml
