@@ -23,6 +23,7 @@
 - name: publishing network config to etcd
   command: "/usr/bin/etcdctl set /coreos.com/network/config '{ \"Network\": \"{{k8s_flanneld_subnet}}\" }'"
   when: etcd_net_config.stdout.find('{{k8s_flanneld_subnet}}') == -1
+  changed_when: false
 
 - name: get etcd cluster info
   command: 'etcdctl cluster-health'
