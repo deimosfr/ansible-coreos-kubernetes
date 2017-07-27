@@ -1,7 +1,8 @@
 # https://quay.io/repository/coreos/hyperkube?tab=tags
-k8s_version: 'v1.6.4_coreos.0'
-k8s_dashboard_version: '1.6.1'
-k8s_kubectl_version: 'v1.6.4'
+k8s_kubectl_version: 'v1.7.2'
+k8s_version: "{{k8s_kubectl_version}}_coreos.0"
+# https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kubernetes-dashboard-amd64?pli=1
+k8s_dashboard_version: '1.6.2'
 
 # Master host will ideally be a network load balancer that sits in front of
 # them. Alternatively, a DNS name can be configured which will resolve to
@@ -101,7 +102,7 @@ k8s_kube_apiserver:
       - --service-cluster-ip-range={{k8s_service_ip_range}}
       - --secure-port=443
       - --advertise-address={{k8s_adverstise_ip}}
-      - --kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP
+      # - --kubelet-preferred-address-types=ExternalDNS,ExternalIP,InternalDNS,Hostname,InternalIP,LegacyHostIP
       - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
       - --tls-cert-file=/etc/kubernetes/ssl/{{k8s_ssl_apiserver_pem_name}}
       - --tls-private-key-file=/etc/kubernetes/ssl/{{k8s_ssl_apiserver_key_pem_name}}
@@ -339,7 +340,7 @@ k8s_dns_service:
       protocol: TCP
 
 k8s_dns_deployment:
-  apiVersion: extensions/v1beta1
+  apiVersion: apps/v1beta1
   kind: Deployment
   metadata:
     name: kube-dns
@@ -407,7 +408,7 @@ k8s_dns_deployment:
               name: metrics
               protocol: TCP
           - name: dnsmasq
-            image: gcr.io/google_containers/kube-dnsmasq-amd64:1.4
+            image: gcr.io/google_containers/kube-dnsmasq-amd64:1.4.1
             livenessProbe:
               httpGet:
                 path: /healthz-dnsmasq
@@ -435,7 +436,7 @@ k8s_dns_deployment:
                 cpu: 150m
                 memory: 10Mi
           - name: dnsmasq-metrics
-            image: gcr.io/google_containers/dnsmasq-metrics-amd64:1.0
+            image: gcr.io/google_containers/dnsmasq-metrics-amd64:1.0.1
             livenessProbe:
               httpGet:
                 path: /metrics
@@ -475,7 +476,7 @@ k8s_dns_deployment:
               protocol: TCP
         dnsPolicy: Default
 k8s_dns_autoscaler:
-  apiVersion: extensions/v1beta1
+  apiVersion: apps/v1beta1
   kind: Deployment
   metadata:
     name: kube-dns-autoscaler
@@ -510,10 +511,10 @@ k8s_dns_autoscaler:
             - --v=2
 
 k8s_heapster_deployment:
-  apiVersion: extensions/v1beta1
+  apiVersion: apps/v1beta1
   kind: Deployment
   metadata:
-    name: heapster-v1.3.0
+    name: heapster-v1.4.0
     namespace: kube-system
     labels:
       k8s-app: heapster
@@ -595,7 +596,7 @@ k8s_heapster_service:
 
 k8s_dashboard_deployment:
   kind: Deployment
-  apiVersion: extensions/v1beta1
+  apiVersion: apps/v1beta1
   metadata:
     labels:
       k8s-app: kubernetes-dashboard
