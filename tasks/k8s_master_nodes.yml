@@ -12,5 +12,9 @@
 # Setup Server / Proxy / Controller Manager / Scheduler
 - include: k8s_master_nodes_components.yml
 
+# Setup Proxy / Kubeconfig
+- include: k8s_workers_nodes_components.yml
+  when: "'k8s-workers' in group_names"
+
 # Create the kubelet Unit
 - include: k8s_kubelet.yml

@@ -90,11 +90,11 @@
   vars:
     k8s_restart_kubelet: true
 
-#############################
-# Configure kubectl locally #
-#############################
+#####################
+# CONFIGURE KUBECTL #
+#####################
 
-- name: configure kubectl locally
+- name: configure kubectl
   hosts: k8s-nodes
   user: core
   become: yes
