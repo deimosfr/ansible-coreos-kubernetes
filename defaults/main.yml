@@ -19,7 +19,7 @@ k8s_dns_service_ip: '10.3.0.10'
 k8s_cluster_domain: 'cluster.local'
 k8s_kubectl_cluster_name: 'default-cluster'
 
-k8s_adverstise_ip: "{{ hostvars[inventory_hostname]['ansible_' + hw_list[hw_model]['coreos']['private_if']]['ipv4']['address'] }}"
+k8s_adverstise_ip: "{{priv_ip}}"
 # Leave it blank if you're using flannel, otherwize use cni for Calico
 k8s_kublet_network_plugin: ''
 k8s_restart_kubelet: true
@@ -88,6 +88,8 @@ k8s_kube_apiserver:
   metadata:
     name: kube-apiserver
     namespace: kube-system
+    labels:
+      app: apiserver
   spec:
     hostNetwork: true
     containers:
@@ -304,7 +306,7 @@ k8s_worker_kubeconfig:
   - name: local
     cluster:
       certificate-authority: /etc/kubernetes/ssl/ca.pem
-      server: "http://localhost:8080"
+      server: "http://127.0.0.1:8080"
   users:
   - name: kubelet
     user:

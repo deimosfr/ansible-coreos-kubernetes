@@ -8,7 +8,7 @@
     mode: 0755
     state: directory
 
-- name: configure k8s Api Server / Proxy / Kubeconfig
+- name: configure k8s Api server / Proxy / Kubeconfig
   template:
     src: "{{k8s_template_dir}}/generate_yaml.j2"
     dest: "{{item.dest}}"

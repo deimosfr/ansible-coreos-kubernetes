@@ -2,7 +2,7 @@
 
 - name: waiting api port to be open
   wait_for:
-    host: 127.0.0.1
+    host: "{{priv_ip}}"
     port: 10255
     delay: 5
     connect_timeout: 2
@@ -11,7 +11,7 @@
 
 - name: get metadata api information
   uri:
-    url: 'http://localhost:10255/pods'
+    url: 'http://{{priv_ip}}:10255/pods'
     method: GET
     return_content: yes
   register: api_result
@@ -20,7 +20,7 @@
 - name: ensure pods are downloading or present
   assert:
     that:
-      - "'kube-apiserver-{{ lookup(\'dig\', hostvars[inventory_hostname][\'priv_ip\']) }}' in api_result.content"
-      - "'kube-scheduler-{{ lookup(\'dig\', hostvars[inventory_hostname][\'priv_ip\']) }}' in api_result.content"
-      - "'kube-controller-manager-{{ lookup(\'dig\', hostvars[inventory_hostname][\'priv_ip\']) }}' in api_result.content"
-      - "'kube-proxy-{{ lookup(\'dig\', hostvars[inventory_hostname][\'priv_ip\']) }}' in api_result.content"
+      - "'kube-apiserver-{{k8s_kubelet_hostname}}' in api_result.content"
+      - "'kube-scheduler-{{k8s_kubelet_hostname}}' in api_result.content"
+      - "'kube-controller-manager-{{k8s_kubelet_hostname}}' in api_result.content"
+      - "'kube-proxy-{{k8s_kubelet_hostname}}' in api_result.content"
