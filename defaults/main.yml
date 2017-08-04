@@ -479,6 +479,7 @@ k8s_dns_deployment:
             - containerPort: 8080
               protocol: TCP
         dnsPolicy: Default
+
 k8s_dns_autoscaler:
   apiVersion: apps/v1beta1
   kind: Deployment
