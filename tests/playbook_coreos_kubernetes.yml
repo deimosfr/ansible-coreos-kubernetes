@@ -114,6 +114,7 @@
   gather_facts: False
   tasks:
     - include: ../tasks/k8s_dns_addon.yml
+    - include: ../tasks/k8s_heapster_addon.yml
     - include: ../tasks/k8s_dashboard.yml
   vars_files:
     - ../defaults/main.yml
