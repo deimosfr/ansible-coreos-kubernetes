@@ -6,14 +6,24 @@
     dest: "/tmp/{{item.dest}}"
     mode: 0644
   with_items:
+    - { yaml: "{{k8s_dns_configmap}}", dest: 'kube-dns-configmap.yaml' }
+    - { yaml: "{{k8s_dns_serviceaccount}}", dest: 'kube-dns-serviceaccount.yaml' }
     - { yaml: "{{k8s_dns_service}}", dest: 'kube-dns-svc.yaml' }
     - { yaml: "{{k8s_dns_deployment}}", dest: 'kube-dns-deployment.yaml' }
-    - { yaml: "{{k8s_dns_deployment}}", dest: 'kube-dns-autoscaler.yaml' }
+    - { yaml: "{{k8s_dns_autoscaler_rbac.service_account}}", dest: 'kube-dns-autoscaler_service_account.yaml' }
+    - { yaml: "{{k8s_dns_autoscaler_rbac.cluster_role}}", dest: 'kube-dns-autoscaler_cluster_role.yaml' }
+    - { yaml: "{{k8s_dns_autoscaler_rbac.cluster_role_binding}}", dest: 'kube-dns-autoscaler_cluster_role_binding.yaml' }
+    - { yaml: "{{k8s_dns_autoscaler}}", dest: 'kube-dns-autoscaler.yaml' }
 
 - name: create k8s dns service and replication controller
   command: "{{item}}"
   with_items:
+    - "/opt/bin/kubectl apply -f /tmp/kube-dns-configmap.yaml"
+    - "/opt/bin/kubectl apply -f /tmp/kube-dns-serviceaccount.yaml"
     - "/opt/bin/kubectl apply -f /tmp/kube-dns-deployment.yaml"
     - "/opt/bin/kubectl apply -f /tmp/kube-dns-svc.yaml"
+    - "/opt/bin/kubectl apply -f /tmp/kube-dns-autoscaler_service_account.yaml"
+    - "/opt/bin/kubectl apply -f /tmp/kube-dns-autoscaler_cluster_role.yaml"
+    - "/opt/bin/kubectl apply -f /tmp/kube-dns-autoscaler_cluster_role_binding.yaml"
     - "/opt/bin/kubectl apply -f /tmp/kube-dns-autoscaler.yaml"
   changed_when: false
