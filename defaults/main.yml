@@ -321,6 +321,25 @@ k8s_worker_kubeconfig:
 
 # 3rd party apps
 
+k8s_dns_configmap:
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kube-dns
+    namespace: kube-system
+    labels:
+      addonmanager.kubernetes.io/mode: EnsureExists
+
+k8s_dns_serviceaccount:
+  apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: kube-dns
+    namespace: kube-system
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+
 k8s_dns_service:
   apiVersion: v1
   kind: Service
@@ -330,6 +349,7 @@ k8s_dns_service:
     labels:
       k8s-app: kube-dns
       kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
       kubernetes.io/name: "KubeDNS"
   spec:
     selector:
@@ -366,11 +386,18 @@ k8s_dns_deployment:
           k8s-app: kube-dns
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
-          scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
       spec:
+        tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        volumes:
+        - name: kube-dns-config
+          configMap:
+            name: kube-dns
+            optional: true
         containers:
           - name: kubedns
-            image: gcr.io/google_containers/kubedns-amd64:1.9
+            image: gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.5
             resources:
               limits:
                 memory: 170Mi
@@ -379,8 +406,8 @@ k8s_dns_deployment:
                 memory: 70Mi
             livenessProbe:
               httpGet:
-                path: /healthz-kubedns
-                port: 8080
+                path: /healthcheck/kubedns
+                port: 10054
                 scheme: HTTP
               initialDelaySeconds: 60
               timeoutSeconds: 5
@@ -396,7 +423,7 @@ k8s_dns_deployment:
             args:
             - "--domain={{k8s_cluster_domain}}."
             - --dns-port=10053
-            - --config-map=kube-dns
+            - --config-dir=/kube-dns-config
             - --v=2
             env:
             - name: PROMETHEUS_PORT
@@ -411,22 +438,32 @@ k8s_dns_deployment:
             - containerPort: 10055
               name: metrics
               protocol: TCP
+            volumeMounts:
+            - name: kube-dns-config
+              mountPath: /kube-dns-config
           - name: dnsmasq
-            image: gcr.io/google_containers/kube-dnsmasq-amd64:1.4.1
+            image: gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.5
             livenessProbe:
               httpGet:
-                path: /healthz-dnsmasq
-                port: 8080
+                path: /healthcheck/dnsmasq
+                port: 10054
                 scheme: HTTP
               initialDelaySeconds: 60
               timeoutSeconds: 5
               successThreshold: 1
               failureThreshold: 5
             args:
+            - -v=2
+            - -logtostderr
+            - -configDir=/etc/k8s/dns/dnsmasq-nanny
+            - -restartDnsmasq=true
+            - --
+            - -k
             - --cache-size=1000
-            - --no-resolv
-            - --server=127.0.0.1#10053
             - --log-facility=-
+            - --server=/{{k8s_cluster_domain}}/127.0.0.1#10053
+            - --server=/in-addr.arpa/127.0.0.1#10053
+            - --server=/ip6.arpa/127.0.0.1#10053
             ports:
             - containerPort: 53
               name: dns
@@ -438,9 +475,13 @@ k8s_dns_deployment:
             resources:
               requests:
                 cpu: 150m
-                memory: 10Mi
-          - name: dnsmasq-metrics
-            image: gcr.io/google_containers/dnsmasq-metrics-amd64:1.0.1
+                memory: 20Mi
+            volumeMounts:
+            - name: kube-dns-config
+              mountPath: /etc/k8s/dns/dnsmasq-nanny
+
+          - name: sidecar
+            image: gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.5
             livenessProbe:
               httpGet:
                 path: /metrics
@@ -453,35 +494,68 @@ k8s_dns_deployment:
             args:
             - --v=2
             - --logtostderr
+            - --probe=kubedns,127.0.0.1:10053,kubernetes.default.svc.{{k8s_cluster_domain}},5,A
+            - --probe=dnsmasq,127.0.0.1:53,kubernetes.default.svc.{{k8s_cluster_domain}},5,A
             ports:
             - containerPort: 10054
               name: metrics
               protocol: TCP
             resources:
               requests:
-                memory: 10Mi
-          - name: healthz
-            image: gcr.io/google_containers/exechealthz-amd64:1.2
-            resources:
-              limits:
-                memory: 50Mi
-              requests:
+                memory: 20Mi
                 cpu: 10m
-                memory: 50Mi
-            args:
-            - "--cmd=nslookup kubernetes.default.svc.{{k8s_cluster_domain}} 127.0.0.1 >/dev/null"
-            - --url=/healthz-dnsmasq
-            - "--cmd=nslookup kubernetes.default.svc.{{k8s_cluster_domain}} 127.0.0.1:10053 >/dev/null"
-            - --url=/healthz-kubedns
-            - --port=8080
-            - --quiet
-            ports:
-            - containerPort: 8080
-              protocol: TCP
         dnsPolicy: Default
+        serviceAccountName: kube-dns
+
+k8s_dns_autoscaler_rbac:
+  service_account:
+    kind: ServiceAccount
+    apiVersion: v1
+    metadata:
+      name: kube-dns-autoscaler
+      namespace: kube-system
+      labels:
+        addonmanager.kubernetes.io/mode: Reconcile
+  cluster_role:
+    kind: ClusterRole
+    apiVersion: rbac.authorization.k8s.io/v1
+    metadata:
+      name: system:kube-dns-autoscaler
+      labels:
+        addonmanager.kubernetes.io/mode: Reconcile
+    rules:
+      - apiGroups: [""]
+        resources: ["nodes"]
+        verbs: ["list"]
+      - apiGroups: [""]
+        resources: ["replicationcontrollers/scale"]
+        verbs: ["get", "update"]
+      - apiGroups: ["extensions"]
+        resources: ["deployments/scale", "replicasets/scale"]
+        verbs: ["get", "update"]
+      # Remove the configmaps rule once below issue is fixed:
+      # kubernetes-incubator/cluster-proportional-autoscaler#16
+      - apiGroups: [""]
+        resources: ["configmaps"]
+        verbs: ["get", "create"]
+  cluster_role_binding:
+    kind: ClusterRoleBinding
+    apiVersion: rbac.authorization.k8s.io/v1
+    metadata:
+      name: system:kube-dns-autoscaler
+      labels:
+        addonmanager.kubernetes.io/mode: Reconcile
+    subjects:
+      - kind: ServiceAccount
+        name: kube-dns-autoscaler
+        namespace: kube-system
+    roleRef:
+      kind: ClusterRole
+      name: system:kube-dns-autoscaler
+      apiGroup: rbac.authorization.k8s.io
 
 k8s_dns_autoscaler:
-  apiVersion: apps/v1beta1
+  apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
     name: kube-dns-autoscaler
@@ -489,6 +563,7 @@ k8s_dns_autoscaler:
     labels:
       k8s-app: kube-dns-autoscaler
       kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
   spec:
     template:
       metadata:
@@ -496,24 +571,30 @@ k8s_dns_autoscaler:
           k8s-app: kube-dns-autoscaler
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
-          scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
       spec:
         containers:
         - name: autoscaler
-          image: gcr.io/google_containers/cluster-proportional-autoscaler-amd64:1.0.0
+          image: gcr.io/google_containers/cluster-proportional-autoscaler-amd64:1.1.2-r2
           resources:
-              requests:
-                  cpu: "20m"
-                  memory: "10Mi"
+            requests:
+              cpu: "20m"
+              memory: "10Mi"
           command:
             - /cluster-proportional-autoscaler
             - --namespace=kube-system
             - --configmap=kube-dns-autoscaler
-            - --mode=linear
+            # Should keep target in sync with cluster/addons/dns/kubedns-controller.yaml.base
             - --target=Deployment/kube-dns
-            - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"min":1}}
+            # When cluster is using large nodes(with more cores), "coresPerReplica" should dominate.
+            # If using small nodes, "nodesPerReplica" should dominate.
+            - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"preventSinglePointFailure":true}}
             - --logtostderr=true
             - --v=2
+        tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        serviceAccountName: kube-dns-autoscaler
+
 k8s_heapster_deployment:
   apiVersion: apps/v1beta1
   kind: Deployment
