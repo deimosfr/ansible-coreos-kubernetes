@@ -3,6 +3,9 @@
 Ansible Kubernetes Role for CoreOS Container Linux
 ==================================================
 
+**IMPORTANT NOTE: this repository is not maintained anymore, you can add PR anyway.
+If you want to deploy Kubernetes with Ansible, I strongly suggest [Kubespray](https://github.com/kubernetes-incubator/kubespray)**
+
 This role bootstrap a Kubernetes cluster based on CoreOS Container Linux for production usages.
 
 Role features:
